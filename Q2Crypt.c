@@ -26,6 +26,13 @@ static unsigned char xorTable[DATA_BLOCK_LEN] = {
 	0x97,0xA2,0x58,0x58,0xF7,0x4E,0x5E,0x50,0x42,0x69,0xDC,0xE7,0x3A,0x87,0x2E,0x22
 };
 
+static unsigned char updateHeader[HEADER_LEN+4] = {
+	0x53,0x41,0x4D,0x53,0x55,0x4E,0x47,0x20,0x59,0x45,0x50,0x50,0x00,0x00,0x00,0x00,
+	0x39,0x2E,0x39,0x39,0x00,0x00,0x00,0x00,0x45,0x55,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x59,0x50,0x2D,0x51,0x32,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+};
+
 void xorBlock (unsigned char *block)
 {
 	int bPos = 0;
@@ -41,9 +48,8 @@ int createUpdate (char *dest, char *updateArchivePath)
 	FILE * updateDat = NULL;
 	FILE * updateArk = NULL;
 	
-	unsigned char 	updateHeader	[HEADER_LEN + 4];
-	unsigned char 	updateBlock		[DATA_BLOCK_LEN];
-	md5_byte_t 		digest			[MD5_DIGEST_LEN];
+	unsigned char 	updateBlock     [DATA_BLOCK_LEN];
+	md5_byte_t 		digest          [MD5_DIGEST_LEN];
 	
 	int updateSz;
 	
@@ -56,8 +62,6 @@ int createUpdate (char *dest, char *updateArchivePath)
 	
 	assert(updateDat);
 	assert(updateArk);
-	
-	memset(updateHeader, 0, sizeof(updateHeader));
 	
 	fwrite(updateHeader, 1, 0x38, updateDat);
 	
@@ -91,9 +95,9 @@ int decryptUpdate (char *dest, char *updateDat)
 	
 	int 			updateSz;
 	int				totalRead;
-	unsigned char 	updateBlock		[DATA_BLOCK_LEN];
-	md5_byte_t 		md5Digest		[MD5_DIGEST_LEN];
-	md5_byte_t 		myDigest		[MD5_DIGEST_LEN];
+	unsigned char 	updateBlock     [DATA_BLOCK_LEN];
+	md5_byte_t 		md5Digest       [MD5_DIGEST_LEN];
+	md5_byte_t 		myDigest        [MD5_DIGEST_LEN];
 	md5_state_t 	hashState;
 	
 	encFile = fopen(updateDat, "rb");
@@ -145,16 +149,16 @@ int main (int argc, char *argv[])
 	if (argc < 3)
 		return 0;
 		
-	if (!strcmp(argv[1], "-enc"))
+	if (!strcmp(argv[1], "-dec"))
 	{
 		retSz = decryptUpdate(argv[3], argv[2]);
 		if (retSz < 1)
 			printf("Hash mismatch while unpacking, update may be corrupt\n");
-		printf("Update encrypted to %s (%ib)\n", argv[3], retSz);
-	} else if (!strcmp(argv[1], "-dec"))
+		printf("Update decrypted to %s (%ib)\n", argv[3], retSz);
+	} else if (!strcmp(argv[1], "-enc"))
 	{
 		retSz = createUpdate(argv[3], argv[2]);
-		printf("Update decrypted to %s (%ib)\n", argv[3], retSz);
+		printf("Update encrypted to %s (%ib)\n", argv[3], retSz);
 	} else
 	{
 		return 0;
