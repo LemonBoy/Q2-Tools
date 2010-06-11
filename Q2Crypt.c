@@ -63,7 +63,11 @@ int createUpdate (char *dest, char *updateArchivePath)
 	assert(updateDat);
 	assert(updateArk);
 	
+	printf("Write header...\n");
+	
 	fwrite(updateHeader, 1, 0x38, updateDat);
+	
+	printf("Encrypting and hashing blob blocks...\n");
 	
 	while (fread(updateBlock, 1, DATA_BLOCK_LEN, updateArk) == DATA_BLOCK_LEN)
 	{
@@ -74,11 +78,19 @@ int createUpdate (char *dest, char *updateArchivePath)
 	
 	md5_finish(&hashState, digest);
 	
+	printf("Writing the hash...\n");
+	
 	fwrite(digest, 1, MD5_DIGEST_LEN, updateDat);
 	
+	printf("Adjusting size...\n");
+	
 	updateSz = ftell(updateDat);
+	updateSz -= HEADER_LEN;
+	updateSz -= MD5_DIGEST_LEN;
 	
 	fseek(updateDat, 0x34, SEEK_SET);
+	
+	printf("Writing the size...\n");
 	
 	fwrite(&updateSz, 1, 4, updateDat);
 	
@@ -92,7 +104,7 @@ int decryptUpdate (char *dest, char *updateDat)
 {
 	FILE * encFile = NULL;
 	FILE * decFile = NULL;
-	
+
 	int 			updateSz;
 	int				totalRead;
 	unsigned char 	updateBlock     [DATA_BLOCK_LEN];
@@ -106,16 +118,35 @@ int decryptUpdate (char *dest, char *updateDat)
 	assert(encFile);
 	assert(decFile);
 	
-	md5_init(&hashState);	
+	md5_init(&hashState);
 	
 	fseek(encFile, HEADER_LEN, SEEK_SET);
 	
+	printf("Reading update size...\n");
+	
 	fread(&updateSz, 1, 4, encFile);
 	
+	fseek(encFile, 0, SEEK_END);
+	
+	if (ftell(encFile) != (HEADER_LEN + 4 + updateSz + MD5_DIGEST_LEN))
+	{
+		printf("Size mismatch, unpack action aborted.\n");
+			
+		fclose(encFile);
+		fclose(decFile);		
+		
+		return 0;
+	}
+		
+	fseek(encFile, HEADER_LEN + 4, SEEK_SET);	
+	
 	totalRead = 0;
+	
+	printf("Decrypting and hashing updater blocks...\n");
 		
 	while (totalRead < updateSz)
 	{
+		printf("%i %i\n", totalRead, updateSz);
 		totalRead += fread(updateBlock, 1, DATA_BLOCK_LEN, encFile);
 		md5_append(&hashState, (const md5_byte_t *)updateBlock, DATA_BLOCK_LEN);
 		xorBlock(updateBlock);
@@ -124,45 +155,34 @@ int decryptUpdate (char *dest, char *updateDat)
 	
 	md5_finish(&hashState, myDigest);
 	
+	printf("Checking for hash mismatches...\n");
+	
 	fread(&md5Digest, 1, MD5_DIGEST_LEN, encFile);
 	
 	if (!memcmp(md5Digest, myDigest, MD5_DIGEST_LEN))
-	{
-		printf("MD5 Hashes are matching!\n");
-	} else	
-	{
-		printf("MD5 Hash mismatch, the update may be corrupt!\n");
-	}
+		printf("MD5 hash are matching!\n");
+	else	
+		printf("MD5 hash mismatch, DO NOT FLASH this image\n");	
 	
 	fclose(encFile);
 	fclose(decFile);
 	
-	return (HEADER_LEN + updateSz + MD5_DIGEST_LEN);
+	return 1;
 }
 	
 int main (int argc, char *argv[])
 {
-	int retSz;
-	
 	printf("** Q2Crypt for SAMSUNG YP-Q2 **\nThe Lemon Man (C) 2010\nUsage:\n\tQ2Crypt -enc/-dec infile outfile\n\n");
 	
 	if (argc < 3)
 		return 0;
 		
 	if (!strcmp(argv[1], "-dec"))
-	{
-		retSz = decryptUpdate(argv[3], argv[2]);
-		if (retSz < 1)
-			printf("Hash mismatch while unpacking, update may be corrupt\n");
-		printf("Update decrypted to %s (%ib)\n", argv[3], retSz);
-	} else if (!strcmp(argv[1], "-enc"))
-	{
-		retSz = createUpdate(argv[3], argv[2]);
-		printf("Update encrypted to %s (%ib)\n", argv[3], retSz);
-	} else
-	{
+		decryptUpdate(argv[3], argv[2]);
+	else if (!strcmp(argv[1], "-enc"))
+		createUpdate(argv[3], argv[2]);
+	else
 		return 0;
-	}
 	
 	return 1;
 }
