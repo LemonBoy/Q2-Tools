@@ -42,6 +42,7 @@ int main (int argc, char *argv[])
 	arcHeader arcHdr;
 	int fileCount, fileOffset, fileSize, fileIndex;
 	u8 *nameTable = NULL, *copyBuf = NULL;
+	char *newDir, *extDot;
 	
 	printf("** arcExtract for SAMSUNG YP-Q2 **\nThe Lemon Man (C) 2010\nUsage:\n\tarcExtract archivename.arc\n\n");
 	
@@ -51,6 +52,15 @@ int main (int argc, char *argv[])
 	fp = fopen(argv[1], "rb");
 	
 	assert(fp != NULL);
+	
+	newDir = strdup(argv[1]);
+	extDot = strrchr(newDir, '.');
+	
+	if (extDot)
+		*extDot = '_';
+		
+	mkdir(newDir);
+	chdir(newDir);
 	
 	fread(&arcHdr, 1, sizeof(arcHeader), fp);
 	
@@ -80,7 +90,7 @@ int main (int argc, char *argv[])
 		fread(&fileSize, 1, 4, fp);
 		fread(&fileOffset, 1, 4, fp);
 		
-		printf("File %02i -%s- Start @ %04X Size %04X\n", fileIndex, getName(nameTable, fileIndex), fileOffset, fileSize);
+		printf("File %03i -%s- Start @ %08X Size %08X\n", fileIndex, getName(nameTable, fileIndex), fileOffset, fileSize);
 		
 		int tblPos = ftell(fp);
 		fseek(fp, fileOffset, SEEK_SET);
@@ -88,6 +98,8 @@ int main (int argc, char *argv[])
 		FILE * xtractFile = fopen(getName(nameTable, fileIndex), "w+b");
 		
 		copyBuf = malloc(fileSize);
+		
+		assert(copyBuf != NULL);
 		
 		fread(copyBuf, 1, fileSize, fp);
 		fwrite(copyBuf, 1, fileSize, xtractFile);
