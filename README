@@ -3,6 +3,8 @@ Haxxoring tools for Samsung YP-Q2 PMP
 
 Q2Crypt - Encrypts/Decrypts the Q2Update.dat files (lame XOR ftw)
 arcExtract - Extract contents from .arc archives used by some Q2 games
+Q2BootImgExtract - Extract bootimages from Q2BootBMP.img
+uci.py - Python script that extracts images out of an UCI theme file
 
 The Lemon Man 	(C) 2010
 #hackerchannel 	(c) 2010
