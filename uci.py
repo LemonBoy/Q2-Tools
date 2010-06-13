@@ -12,10 +12,7 @@ except:
 	exit(0)
 	
 try:
-	os.mkdir('wallpapers')
-	os.mkdir('menuIcons')
-	os.mkdir('textOverlay')
-	os.mkdir('spare')
+	os.mkdir(sys.argv[1] + '_icons')
 except:
 	pass
 
@@ -38,7 +35,7 @@ while uciFile.tell() < tagsLen:
 	print 'Tag %s Len 0x%x' % (uciTag, uciTagSz)
 	
 	if uciTag == 'APIC':
-		previewJpg = open('preview.jpg', 'wb')
+		previewJpg = open(sys.argv[1] + '_icons/' + 'preview.jpg', 'wb')
 		previewJpg.write(uciTagPayload)
 		previewJpg.close()
 	else:
@@ -62,8 +59,8 @@ tabIndex = 0
 
 # Table len is always 0xBD0 and each record is 0x10 byte wise
 # Record format:
-# 0x00 Bitmap Flag 1
-# 0x02 Bitmap Flag 2
+# 0x00 Bitmap X
+# 0x02 Bitmap Y
 # 0x04 Bitmap width
 # 0x06 Bitmap height
 # 0x08 Unknown (always 5)
@@ -72,44 +69,27 @@ tabIndex = 0
 while tabIndex < 0xBD0 / 0x10:
 	uciFile.seek(tableStart + (tabIndex * 0x10))
 
-	bitmapFlags1 = struct.unpack('<H', uciFile.read(2))[0]
-	bitmapFlags2 = struct.unpack('<H', uciFile.read(2))[0]
+	bitmapX = struct.unpack('<H', uciFile.read(2))[0]
+	bitmapY = struct.unpack('<H', uciFile.read(2))[0]
 	bitmapW = struct.unpack('<H', uciFile.read(2))[0]
 	bitmapH = struct.unpack('<H', uciFile.read(2))[0]
 	unknownField = struct.unpack('<I', uciFile.read(4))[0]
 	bitmapOffset = struct.unpack('<I', uciFile.read(4))[0]
 	
 	print 'Bitmap %i' % tabIndex
-	print 'Bitmap flags -> %x %x' % (bitmapFlags1, bitmapFlags2)
+	print 'Bitmap coord -> %i %i' % (bitmapX, bitmapY)
 	print 'Bitmap size  -> %i x %i' % (bitmapW, bitmapH)
 	print 'Unknown field-> %x' % (unknownField)
 	print 'Bitmap offset-> 0x%x' % bitmapOffset
-	
-	# flags i got to figure
-	# 0  0   = wallpapers
-	# 13 74  = text overlays
-	# 8  3   = standard Samsung menu icons
-	# 15 175 = mpre text overlays + mask ?
-	
-	if (bitmapFlags1 == 0 and bitmapFlags2 == 0):
-		os.chdir('wallpapers')
-	elif (bitmapFlags1 == 13 and bitmapFlags2 == 74):
-		os.chdir('textOverlay')
-	elif (bitmapFlags1 == 8 and bitmapFlags2 == 3):
-		os.chdir('menuIcons')
-	else:
-		os.chdir('spare')
-	
+		
 	uciFile.seek(tableStart + 0xbd0 + bitmapOffset)
 	
 	bmpHdr = uciFile.read(6)
 	bmpSz = struct.unpack('i', bmpHdr[2:])[0] - 6
-	bmpFile = open(str(tabIndex) + '_' + str(bitmapFlags1) + '_' + str(bitmapFlags2) + '.bmp', 'wb')
+	bmpFile = open(sys.argv[1] + '_icons/' + str(tabIndex) + '.bmp', 'wb')
 	bmpFile.write(bmpHdr)
 	bmpFile.write(uciFile.read(bmpSz))
 	bmpFile.close()
-	
-	os.chdir('..')
-	
+
 	tabIndex = tabIndex + 1
 
