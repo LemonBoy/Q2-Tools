@@ -3,6 +3,12 @@
 
 import os, sys, struct
 
+def isInRange(n, range):
+	if n >= range[0] and n <= range[1]:
+		return 1
+	else:
+		return 0
+
 print 'uciExtract Alpha\n(C) 2010 The Lemon Man'
 
 try:
@@ -15,6 +21,8 @@ try:
 	os.mkdir(sys.argv[1] + '_icons')
 except:
 	pass
+	
+xmlDump = open(sys.argv[1] + '_icons/' + 'theme.xml', 'wb')
 
 uciHeader = uciFile.read(0x60)
 
@@ -35,6 +43,8 @@ while uciFile.tell() < tagsLen:
 	print 'Tag %s Len 0x%x' % (uciTag, uciTagSz)
 	
 	if uciTag == 'APIC':
+		xmlDump.write('<preview>' + 'preview.jpg' + '</preview>')
+	
 		previewJpg = open(sys.argv[1] + '_icons/' + 'preview.jpg', 'wb')
 		previewJpg.write(uciTagPayload)
 		previewJpg.close()
@@ -66,6 +76,15 @@ tabIndex = 0
 # 0x08 Unknown (always 5)
 # 0x0C Bitmap offset relative to the end of the table
 
+animationRanges = [
+	['microphoneAnimation'	, [30, 42]], 
+	['musicAnimation'		, [43, 55]],
+	['textAnimation'		, [56, 68]],
+	['musicAnimation'		, [69, 81]],
+	['gamesAnimation'		, [85, 97]]
+	
+]
+
 while tabIndex < 0xBD0 / 0x10:
 	uciFile.seek(tableStart + (tabIndex * 0x10))
 
@@ -81,6 +100,8 @@ while tabIndex < 0xBD0 / 0x10:
 	print 'Bitmap size  -> %i x %i' % (bitmapW, bitmapH)
 	print 'Unknown field-> %x' % (unknownField)
 	print 'Bitmap offset-> 0x%x' % bitmapOffset
+
+	xmlDump.write('<image index="' + str(tabIndex) + '" Width="' + str(bitmapW) + '" Height="' + str(bitmapH) + '" Xpos="' + str(bitmapX) + '" Ypos="' + str(bitmapY) + '" >' + str(tabIndex) + '.bmp' + '</image>\n')
 		
 	uciFile.seek(tableStart + 0xbd0 + bitmapOffset)
 	
@@ -92,4 +113,6 @@ while tabIndex < 0xBD0 / 0x10:
 	bmpFile.close()
 
 	tabIndex = tabIndex + 1
+	
+xmlDump.write('</uciTheme>\n')
 
