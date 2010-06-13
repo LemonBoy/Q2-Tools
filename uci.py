@@ -23,6 +23,7 @@ except:
 	pass
 	
 xmlDump = open(sys.argv[1] + '_icons/' + 'theme.xml', 'wb')
+xmlDump.write('<uciTheme>\n')
 
 uciHeader = uciFile.read(0x60)
 
@@ -43,7 +44,7 @@ while uciFile.tell() < tagsLen:
 	print 'Tag %s Len 0x%x' % (uciTag, uciTagSz)
 	
 	if uciTag == 'APIC':
-		xmlDump.write('<preview>' + 'preview.jpg' + '</preview>')
+		xmlDump.write('<preview>' + 'preview.jpg' + '</preview>\n')
 	
 		previewJpg = open(sys.argv[1] + '_icons/' + 'preview.jpg', 'wb')
 		previewJpg.write(uciTagPayload)
