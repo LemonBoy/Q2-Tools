@@ -8,7 +8,25 @@ def isInRange(n, range):
 		return 1
 	else:
 		return 0
+		
+def hexdump(src, length = 16): # dumps to a "hex editor" style output
+	result = []
+	for i in xrange(0, len(src), length):
+		s = src[i:i + length]
+		if(len(s) % 4 == 0):
+			mod = 0 
+		else: 
+			mod = 1 
+		hexa = ''
+		for j in range((len(s) / 4) + mod):
+			hexa += ' '.join(["%02X" % ord(x) for x in s[j * 4:j * 4 + 4]])
+			if(j != ((len(s) / 4) + mod) - 1):
+				hexa += '  '
+		printable = s.translate(''.join([(len(repr(chr(x))) == 3) and chr(x) or '.' for x in range(256)]))
+		result.append("0x%04X   %-*s   %s\n" % (i, (length * 3) + 2, hexa, printable))
+	return ''.join(result)
 
+	
 print 'uciExtract Alpha\n(C) 2010 The Lemon Man'
 
 try:
@@ -49,8 +67,12 @@ while uciFile.tell() < tagsLen:
 		previewJpg = open(sys.argv[1] + '_icons/' + 'preview.jpg', 'wb')
 		previewJpg.write(uciTagPayload)
 		previewJpg.close()
+	elif uciTag == 'TCOM':
+		print 'Comment %s' % uciTagPayload
+	elif uciTag == 'TTAG':
+		print 'Tag %s' % uciTagPayload
 	else:
-		print '%s' % uciTagPayload
+		print '%s' % hexdump(uciTagPayload, uciTagSz)
 
 dataHdr = uciFile.read(0x3E)
 uciVer = uciFile.read(0x20)
