@@ -2,7 +2,7 @@
  * Q2Crypt.c
  * The Lemon Man (C) 2010
  *
- * gcc -03 -Wall Q2Crypt.c md5.c -o Q2Crypt
+ * gcc -O3 -Wall Q2Crypt.c md5.c -o Q2Crypt
  *
  */
  
@@ -85,6 +85,7 @@ int createUpdate (char *dest, char *updateArchivePath)
 	printf("Adjusting size...\n");
 	
 	updateSz = ftell(updateDat);
+	updateSz -= 0x4; /* Size tag */
 	updateSz -= HEADER_LEN;
 	updateSz -= MD5_DIGEST_LEN;
 	
