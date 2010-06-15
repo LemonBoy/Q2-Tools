@@ -3,11 +3,124 @@
 
 import os, sys, struct
 
-def isInRange(n, range):
-	if n >= range[0] and n <= range[1]:
-		return 1
-	else:
-		return 0
+"""
+Table len is always 0xBD0 and each record is 0x10 byte wise
+# Record format:
+# 0x00 Bitmap X
+# 0x02 Bitmap Y
+# 0x04 Bitmap width
+# 0x06 Bitmap height
+# 0x08 Unknown (always 5)
+# 0x0C Bitmap offset relative to the end of the table
+"""
+
+class uciImage ():
+	def __init__ (self, index):
+		self.index = index
+		self.bitmapX = self.bitmapY = 0
+		self.bitmapW = self.bitmapH = 0
+		self.unknownField = 5
+		self.bitmapOffset = 0
+		self.data = []
+	def fromTable(self, tableRecord):
+		self.bitmapX = struct.unpack('<H', tableRecord[0:2])[0]
+		self.bitmapY = struct.unpack('<H', tableRecord[2:4])[0]
+		self.bitmapW = struct.unpack('<H', tableRecord[4:6])[0]
+		self.bitmapH = struct.unpack('<H', tableRecord[6:8])[0]
+		self.unknownField = struct.unpack('<I', tableRecord[8:12])[0]
+		self.bitmapOffset = struct.unpack('<I', tableRecord[12:16])[0]
+	def setData(self, bmpData):
+		if bmpData[:2] == 'BM':
+			self.data = bmpData
+		else:
+			raise valueError 
+
+class uciTheme:
+	def __init__ (self, uciFile = None):
+		self.tags  = []
+		self.images = []
+		
+		self.uciHeader = self.dataHdr = self.shiz = self.menuHdr = []
+		self.tagsLen = self.fileLen = self.tableStart = 0
+		
+		self.devCode = 'b996996ac1e647becc347d1663f133e2'
+		self.uciVer  = 'UCI V0.1                        '
+		self.uciDev  = 'YP-Q2                           '
+		
+		if uciFile != None:
+			self.uciHeader = uciFile.read(0x60)
+
+			self.tagsLen = struct.unpack('<I', self.uciHeader[0x1C:0x20])[0]
+			self.fileLen = struct.unpack('<I', self.uciHeader[0x18:0x1C])[0]
+			self.devCode = self.uciHeader[0x40:0x60]
+
+			print 'File len %i' % self.fileLen
+			print 'Tags len 0x%x' % self.tagsLen
+			print 'Unique device id : %s' % self.devCode
+
+			while uciFile.tell() < self.tagsLen:
+				uciTag = uciFile.read(4)
+				uciTagSz = struct.unpack('<I', uciFile.read(4))[0]
+				uciTagFlag = struct.unpack('<H', uciFile.read(2))[0]
+				uciTagPayload = uciFile.read(uciTagSz)
+				
+				self.tags.append({'Name' : uciTag, 'Size' : uciTagSz, 'Flags' : uciTagFlag, 'Payload' : uciTagPayload})
+
+			self.dataHdr = uciFile.read(0x3E)
+			self.uciVer = uciFile.read(0x20)
+			self.uciDev = uciFile.read(0x20)
+
+			print 'Uci version : %s' % self.uciVer
+			print 'Uci for %s' % self.uciDev
+
+			self.shiz = uciFile.read(0x14)
+			self.menuHdr = uciFile.read(0x38)
+
+			self.tableStart = struct.unpack('<I', self.menuHdr[0x2C:0x30])[0]
+
+			print 'Table @ 0x%x' % self.tableStart
+			
+			tabIndex = 0
+			
+			while tabIndex < 0xBD0 / 0x10:
+				uciFile.seek(self.tableStart + (tabIndex * 0x10))
+
+				image = uciImage(tabIndex)
+				image.fromTable(uciFile.read(0x10))
+				
+				"""print 'Bitmap %i' % tabIndex
+				print 'Bitmap coord -> %i %i' % (ico.bitmapX, ico.bitmapY)
+				print 'Bitmap size  -> %i x %i' % (ico.bitmapW, ico.bitmapH)
+				print 'Unknown field-> %x' % (ico.unknownField)
+				print 'Bitmap offset-> 0x%x' % ico.bitmapOffset"""
+
+				uciFile.seek(self.tableStart + 0xbd0 + image.bitmapOffset)
+				
+				bmpHdr = uciFile.read(6)
+				bmpSz = struct.unpack('i', bmpHdr[2:])[0] - 6
+				image.setData(bmpHdr + uciFile.read(bmpSz))
+				
+				self.images.append(image)
+
+				tabIndex = tabIndex + 1
+				
+	def dumpImages (self, outputPath):
+		for image in self.images:
+			bmpFile = open(outputPath + '/' + str(image.index) + '.bmp', 'wb')
+			bmpFile.write(image.data)
+			bmpFile.close()
+	def dumpTags (self):
+		for tag in self.tags:
+			print 'Tag %s Len 0x%x Flags %02x' % (tag['Name'], tag['Size'], tag['Flags'])
+		
+			if tag['Name'] == 'APIC':
+				print 'Preview JPEG'
+			elif tag['Name'] == 'TCOM':
+				print 'Comment %s' % tag['Payload']
+			elif tag['Name'] == 'TTAG':
+				print 'Tag %s' % tag['Payload']
+			else:
+				print '%s' % hexdump(tag['Payload'], tag['Size'])
 		
 def hexdump(src, length = 16): # dumps to a "hex editor" style output
 	result = []
@@ -23,7 +136,7 @@ def hexdump(src, length = 16): # dumps to a "hex editor" style output
 			if(j != ((len(s) / 4) + mod) - 1):
 				hexa += '  '
 		printable = s.translate(''.join([(len(repr(chr(x))) == 3) and chr(x) or '.' for x in range(256)]))
-		result.append("0x%04X   %-*s   %s\n" % (i, (length * 3) + 2, hexa, printable))
+		result.append("0x%04X   %-*s   %s" % (i, (length * 3) + 2, hexa, printable))
 	return ''.join(result)
 
 	
@@ -40,102 +153,10 @@ try:
 except:
 	pass
 	
-xmlDump = open(sys.argv[1] + '_icons/' + 'theme.xml', 'wb')
-xmlDump.write('<uciTheme>\n')
+myTheme = uciTheme(uciFile)
+myTheme.dumpImages(sys.argv[1] + '_icons')
+myTheme.dumpTags()
 
-uciHeader = uciFile.read(0x60)
 
-tagsLen = struct.unpack('<I', uciHeader[0x1C:0x20])[0]
-fileLen = struct.unpack('<I', uciHeader[0x18:0x1C])[0]
-devCode = uciHeader[0x40:0x60]
 
-print 'File len %i' % fileLen
-print 'Tags len 0x%x' % tagsLen
-print 'Unique device id : %s' % devCode
-
-while uciFile.tell() < tagsLen:
-	uciTag = uciFile.read(4)
-	uciTagSz = struct.unpack('<I', uciFile.read(4))[0]
-	uciTagFlag = uciFile.read(2)
-	uciTagPayload = uciFile.read(uciTagSz)
-
-	print 'Tag %s Len 0x%x' % (uciTag, uciTagSz)
-	
-	if uciTag == 'APIC':
-		xmlDump.write('<preview>' + 'preview.jpg' + '</preview>\n')
-	
-		previewJpg = open(sys.argv[1] + '_icons/' + 'preview.jpg', 'wb')
-		previewJpg.write(uciTagPayload)
-		previewJpg.close()
-	elif uciTag == 'TCOM':
-		print 'Comment %s' % uciTagPayload
-	elif uciTag == 'TTAG':
-		print 'Tag %s' % uciTagPayload
-	else:
-		print '%s' % hexdump(uciTagPayload, uciTagSz)
-
-dataHdr = uciFile.read(0x3E)
-uciVer = uciFile.read(0x20)
-uciDev = uciFile.read(0x20)
-
-print 'Uci version : %s' % uciVer
-print 'Uci for %s' % uciDev
-
-shiz = uciFile.read(0x14)
-menuHdr = uciFile.read(0x38)
-
-tableStart = struct.unpack('<I', menuHdr[0x2C:0x30])[0]
-
-print 'Table @ 0x%x' % tableStart
-
-tabIndex = 0
-
-# Table len is always 0xBD0 and each record is 0x10 byte wise
-# Record format:
-# 0x00 Bitmap X
-# 0x02 Bitmap Y
-# 0x04 Bitmap width
-# 0x06 Bitmap height
-# 0x08 Unknown (always 5)
-# 0x0C Bitmap offset relative to the end of the table
-
-animationRanges = [
-	['microphoneAnimation'	, [30, 42]], 
-	['musicAnimation'		, [43, 55]],
-	['textAnimation'		, [56, 68]],
-	['musicAnimation'		, [69, 81]],
-	['gamesAnimation'		, [85, 97]]
-	
-]
-
-while tabIndex < 0xBD0 / 0x10:
-	uciFile.seek(tableStart + (tabIndex * 0x10))
-
-	bitmapX = struct.unpack('<H', uciFile.read(2))[0]
-	bitmapY = struct.unpack('<H', uciFile.read(2))[0]
-	bitmapW = struct.unpack('<H', uciFile.read(2))[0]
-	bitmapH = struct.unpack('<H', uciFile.read(2))[0]
-	unknownField = struct.unpack('<I', uciFile.read(4))[0]
-	bitmapOffset = struct.unpack('<I', uciFile.read(4))[0]
-	
-	print 'Bitmap %i' % tabIndex
-	print 'Bitmap coord -> %i %i' % (bitmapX, bitmapY)
-	print 'Bitmap size  -> %i x %i' % (bitmapW, bitmapH)
-	print 'Unknown field-> %x' % (unknownField)
-	print 'Bitmap offset-> 0x%x' % bitmapOffset
-
-	xmlDump.write('<image index="' + str(tabIndex) + '" Width="' + str(bitmapW) + '" Height="' + str(bitmapH) + '" Xpos="' + str(bitmapX) + '" Ypos="' + str(bitmapY) + '" >' + str(tabIndex) + '.bmp' + '</image>\n')
-		
-	uciFile.seek(tableStart + 0xbd0 + bitmapOffset)
-	
-	bmpHdr = uciFile.read(6)
-	bmpSz = struct.unpack('i', bmpHdr[2:])[0] - 6
-	bmpFile = open(sys.argv[1] + '_icons/' + str(tabIndex) + '.bmp', 'wb')
-	bmpFile.write(bmpHdr)
-	bmpFile.write(uciFile.read(bmpSz))
-	bmpFile.close()
-
-	tabIndex = tabIndex + 1
-	
-xmlDump.write('</uciTheme>\n')
 
