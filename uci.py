@@ -37,11 +37,20 @@ class uciImage ():
 		self.bitmapH = struct.unpack('<H', tableRecord[6:8])[0]
 		self.unknownField = struct.unpack('<I', tableRecord[8:12])[0]
 		self.bitmapOffset = struct.unpack('<I', tableRecord[12:16])[0]
+	def setCoords (self, newCoords):
+		self.bitmapX = newCoords[0]
+		self.bitmapY = newCoords[1]
+		return 1
 	def setData(self, bmpData):
-		if bmpData[:2] == 'BM':
-			self.data = bmpData
-		else:
-			raise valueError 
+		if len(self.data) != 0 and len(bmpData) > len(self.data):
+			print '%i > %i' % (len(bmpData), len(self.data))
+			return 0
+		if bmpData[:2] != 'BM':
+			return 0
+			
+		self.data = bmpData
+
+		return 1
 
 class uciTheme:
 	def __init__ (self, uciFile = None):
@@ -78,7 +87,7 @@ class uciTheme:
 
 			self.dataHdr = self.uciFile.read(0x3E)
 			
-			open('datahdr.bin', 'wb').write(self.dataHdr)
+			#open('datahdr.bin', 'wb').write(self.dataHdr)
 			
 			self.uciVer = self.uciFile.read(0x20)
 			self.uciDev = self.uciFile.read(0x20)
@@ -88,7 +97,7 @@ class uciTheme:
 
 			self.shiz = self.uciFile.read(0x14)
 			
-			open('themeshiz.bin', 'wb').write(self.shiz)
+			#open('themeshiz.bin', 'wb').write(self.shiz)
 			
 			self.menuHdr = self.uciFile.read(0x38)
 
@@ -115,11 +124,11 @@ class uciTheme:
 				image = uciImage(tabIndex)
 				image.fromTable(self.uciFile.read(0x10))
 				
-				"""print 'Bitmap %i' % tabIndex
-				print 'Bitmap coord -> %i %i' % (ico.bitmapX, ico.bitmapY)
-				print 'Bitmap size  -> %i x %i' % (ico.bitmapW, ico.bitmapH)
-				print 'Unknown field-> %x' % (ico.unknownField)
-				print 'Bitmap offset-> 0x%x' % ico.bitmapOffset"""
+				print 'Bitmap %i' % tabIndex
+				print 'Bitmap coord -> %i %i' % (image.bitmapX, image.bitmapY)
+				print 'Bitmap size  -> %i x %i' % (image.bitmapW, image.bitmapH)
+				print 'Unknown field-> %x' % (image.unknownField)
+				print 'Bitmap offset-> 0x%x' % image.bitmapOffset
 
 				self.uciFile.seek(self.tableStart + (self.tableEntries * 0x10) + image.bitmapOffset)
 				
@@ -145,16 +154,45 @@ class uciTheme:
 			elif tag['Name'] == 'TAUT':
 				print 'Author %s' % tag['Payload']
 			elif tag['Name'] == 'TTAG':
-				print 'TAG %s' % tag['Payload']				
+				print 'Tag %s' % tag['Payload']				
 			else:
 				print '%s' % hexdump(tag['Payload'], tag['Size'])
+	def updateIconCoord (self, index, coord):
+		if index > self.tableEntries:
+			print 'Index out of range %i' % index
+			return 0
+		return self.images[index].setCoords(coord)		
 	def updateIconData (self, index, data):
+		if index > self.tableEntries:
+			print 'Index out of range %i' % index
+			return 0
 		self.images[index].data = data
-	def updateIconInFile (self,index):
+		return 1
+	def updateIconTableEntry (self,index):
+		if index > self.tableEntries:
+			print 'Index out of range %i' % index
+			return 0
+		self.uciFile.seek(self.tableStart + (index * 0x10))
+		
+		print 'Updating table entry @ %x' % self.uciFile.tell()
+		
+		self.uciFile.write(struct.pack('<H', self.images[index].bitmapX))
+		self.uciFile.write(struct.pack('<H', self.images[index].bitmapY))
+		self.uciFile.write(struct.pack('<H', self.images[index].bitmapW))
+		self.uciFile.write(struct.pack('<H', self.images[index].bitmapH))
+		self.uciFile.write(struct.pack('<I', self.images[index].unknownField))
+		self.uciFile.write(struct.pack('<I', self.images[index].bitmapOffset))	
+		
 		self.uciFile.seek(self.tableStart + (self.tableEntries * 0x10))
 		self.uciFile.seek(self.images[index].bitmapOffset, 1)
 		self.uciFile.write(self.images[index].data)
 		
+		# u.u why i have to do this ?
+		
+		self.uciFile.seek(-2, 1)
+		self.uciFile.write('BM')
+			
+		return 1
 		
 def hexdump(src, length = 16): # dumps to a "hex editor" style output
 	result = []
@@ -172,26 +210,6 @@ def hexdump(src, length = 16): # dumps to a "hex editor" style output
 		printable = s.translate(''.join([(len(repr(chr(x))) == 3) and chr(x) or '.' for x in range(256)]))
 		result.append("0x%04X   %-*s   %s" % (i, (length * 3) + 2, hexa, printable))
 	return ''.join(result)
-
-	
-print 'uciExtract Alpha\n(C) 2010 The Lemon Man'
-
-try:
-	uciFile = open(sys.argv[1], 'r+b')
-except:
-	print 'Usage:\n\tpython uci.py uciTheme.uci'
-	exit(0)
-	
-try:
-	os.mkdir(sys.argv[1] + '_icons')
-except:
-	pass
-	
-myTheme = uciTheme(uciFile)
-myTheme.dumpImages(sys.argv[1] + '_icons')
-myTheme.dumpTags()
-#myTheme.updateIconData(77, open(sys.argv[1] + '_icons/106.bmp', 'rb').read())
-#myTheme.updateIconInFile(77)
 
 
 
