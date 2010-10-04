@@ -1,10 +1,12 @@
 Q2 Tools
 Haxxoring tools for Samsung YP-Q2 PMP
 
-Q2Crypt - Encrypts/Decrypts the Q2Update.dat files (lame XOR ftw)
-arcExtract - Extract contents from .arc archives used by some Q2 games
-Q2BootImgExtract - Extract bootimages from Q2BootBMP.img
-uci.py - Python script that extracts images out of an UCI theme file
+The theme_stuff folder contains pretty much everything you need to make/edit UCI themes.
+unpack.sh and repack.sh will help you to make your fw haxx, remember that /mnt/usb points
+to the usb partition so you might want to load stuff from there.
+Don't kill AppMain at bootup if you want to preserve the player life :P
+Ive included a legacy version of the squashfs tools to extract the rootfs content.
+The hello world is still a wip!
 
 The Lemon Man 	(C) 2010
 #hackerchannel 	(c) 2010
