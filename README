@@ -7,6 +7,8 @@ to the usb partition so you might want to load stuff from there.
 Don't kill AppMain at bootup if you want to preserve the player life :P
 Ive included a legacy version of the squashfs tools to extract the rootfs content.
 The hello world is still a wip!
+I'm using codesourcery's g++ arm toolchain lite to compile stuff and it works well, set your
+compiler in the makefile if different.
 
 The Lemon Man 	(C) 2010
 #hackerchannel 	(c) 2010
