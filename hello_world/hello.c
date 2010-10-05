@@ -5,27 +5,44 @@
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
-#include <linux/fb.h>
+#include "uFb.h"
+
+static int fbfd = 0;
+static unsigned short *fb = NULL;
+
+int fbInit ()
+{
+    fbfd = open("/dev/fb", O_RDWR);
+    if (!fbfd)
+        return 0;
+    fb = (unsigned short *)mmap(0, 320*240*2, PROT_READ|PROT_WRITE, MAP_SHARED, fbfd, 0);
+    if (!fb)
+        return 0;
+    return 1;
+}
+
+void fbFlip ()
+{
+    unsigned int screen_region[4] = {
+        0, // X
+        0, // Y
+        320, // Width
+        240, // Height
+    };
+    if (ioctl(fbfd, 0x4010C10A, screen_region))
+        printf("Cannot update screen!\n");
+}
+
+void fbPut (unsigned int x, unsigned int y, unsigned int pixel)
+{
+    fb[y*240+x] = (pixel&0xFFFF);
+}
 
 int main ()
 {
-    int fbfd = open("/dev/fb", O_RDWR);
-    struct fb_var_screeninfo screeninfo;
-    if (!fbfd) {
-        printf("Cannot open /dev/fb\n");
-        return 0;
-    }
-    if (ioctl(fbfd, FBIOGET_VSCREENINFO, &screeninfo)) {
-        printf("Cannot get screen info\n");
-        return 0;
-    }
-    int fbsize = screeninfo.xres*screeninfo.yres*screeninfo.bits_per_pixel/8;
-    char *fb = mmap(0, fbsize, PROT_READ|PROT_WRITE, MAP_SHARED, fbfd, 0);
-    if (!fb) {
-        printf("Cannot mmap the vram\n");
-        return 0;
-    }
-    memset(fb, 0, fbsize/2);
-    memset(fb+(fbsize/2), 0xff, fbsize/2);
-    while (1);
+    uFbInit(240, 320, fbInit, fbPut, fbFlip);
+    memset(fb, 0, 320*240*2);
+    uFbPrint("Hello World YP-Q2!\nHack&code : The Lemon Man!\nLess drama and moar haxx!\n\nGreetz to #HACKERCHANNEL crew\nReset the player to quit :)");
+    while (1)
+        uFbDrawEnd();
 }

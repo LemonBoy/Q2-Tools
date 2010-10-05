@@ -6,9 +6,32 @@ unpack.sh and repack.sh will help you to make your fw haxx, remember that /mnt/u
 to the usb partition so you might want to load stuff from there.
 Don't kill AppMain at bootup if you want to preserve the player life :P
 Ive included a legacy version of the squashfs tools to extract the rootfs content.
-The hello world is still a wip!
 I'm using codesourcery's g++ arm toolchain lite to compile stuff and it works well, set your
 compiler in the makefile if different.
+
+Say hello to the first hello world on this device :D
+
+Howto:
+
+1 - Place the update named Q2Update.dat in this folder
+2 - Run the unpack.sh script
+3 - Get into q2update_unpacked/appfs/ and open the file runusb.sh
+4 - Add '/mnt/usb/mycode.sh' (w/o quotes) after the USBSrv line
+5 - Run the repack.sh script and flash the HACK.dat image (rename it to Q2Update.dat and throw it into the root)
+6 - Create a file called 'mycode.sh' into the usb root and write this script:
+
+#!/bin/sh
+sleep 10
+if [ -f /mnt/usb/runcode ]; then 
+    rm -f /mnt/usb/runcode
+    killall -9 AppMain
+    sleep 6
+    /mnt/usb/hello
+fi
+
+7 - Create a file called runcode and copy the hello world binary into the root called 'hello'
+8 - Disconnect the usb and hard reset the player using the hole on the back
+9 - Watch the hello world running :D
 
 The Lemon Man 	(C) 2010
 #hackerchannel 	(c) 2010
