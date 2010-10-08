@@ -1,37 +1,75 @@
-Q2 Tools
-Haxxoring tools for Samsung YP-Q2 PMP
+Homebrew toolchain/sdk/samples for the Samsung YP-Q2 PMP
+========================================================
 
-The theme_stuff folder contains pretty much everything you need to make/edit UCI themes.
-unpack.sh and repack.sh will help you to make your fw haxx, remember that /mnt/usb points
-to the usb partition so you might want to load stuff from there.
-Don't kill AppMain at bootup if you want to preserve the player life :P
-Ive included a legacy version of the squashfs tools to extract the rootfs content.
-I'm using codesourcery's g++ arm toolchain lite to compile stuff and it works well, set your
-compiler in the makefile if different.
+Based on Sigmatel (now Freescale) STMP3700 SoC, has an ARM cpu ()
+and a DSP for accelerated video/audio decoding, everything wrapped
+up nicely with a Linux system.
+The update (Q2Update.dat) format and encryption has been reversed
+and a repacker has been made, making custom firmwares possible.
+The most common hack (and the one im using) is unpacking the fw with
+the unpack.sh script (in the tools folder) and editing the file 
+@runusb.sh@ into the @appfs/bin@ folder and adding a line that executes
+a file off /mnt/usb (the partition seen when connected to the pc) like
 
-Say hello to the first hello world on this device :D
+@/mnt/usb/myscript.sh@
 
-Howto:
+Repacking the update with repack.sh and flashing the HACK.dat file is 
+all you need to start enjoying homebrews on your Q2 :D
 
-1 - Place the update named Q2Update.dat in this folder
-2 - Run the unpack.sh script
-3 - Get into q2update_unpacked/appfs/ and open the file runusb.sh
-4 - Add '/mnt/usb/mycode.sh' (w/o quotes) after the USBSrv line
-5 - Run the repack.sh script and flash the HACK.dat image (rename it to Q2Update.dat and throw it into the root)
-6 - Create a file called 'mycode.sh' into the usb root and write this script:
+### USB script ###
 
-#!/bin/sh
+Youre not an unix guru and you dont know what to write into the myscript.sh ?
+Don't worry, just copy this :
+
+@#!/bin/sh
 sleep 10
 if [ -f /mnt/usb/runcode ]; then 
     rm -f /mnt/usb/runcode
     killall -9 AppMain
     sleep 6
     /mnt/usb/hello
-fi
+fi@
 
-7 - Create a file called runcode and copy the hello world binary into the root called 'hello'
-8 - Disconnect the usb and hard reset the player using the hole on the back
-9 - Watch the hello world running :D
+It basically waits 10 seconds, then if a file called runcode exists into the
+root it will kill the main player app and start your app called 'hello' (yep,
+it must be placed in the root too)
 
+### SDK ###
+
+Want to start coding on this pocket beast? :D 
+Just download or build an ARM compiler ([Codesourcery][armtk] offers a
+precompiled one) and start reading out the hello world code to start grasping
+how the libQ2 works
+
+libQ2 is going to be reorganized in a better way as soon as i get all the basic
+stuff working.
+
+### What works... ###
+
+- Video trough framebuffer
+- Input (need multiple keys catching support)
+- Keypad leds control
+- Battery status reading
+- CPU clock setting
+
+### ...and what doesnt ###
+
+- Touchpad
+- RTC interface
+- Sound (need to reverse the 'diagnosis' bin to document how /dev/dsp works)
+- USB system
+- Earphones detection
+- Maybe something i forgot :D
+
+### Creditz ###
+
+Matt_P for suggesting me the idea that the update was xor cyphered
+Booto for being the unix guru
+#HACKERCHANNEL for being the greatest dudes on teh world
+Mum and Dad for buying me this wonderful PMP as b-day surprise :)
+
+
+[armtk]: http://www.codesourcery.com/sgpp/lite/arm/portal/release1294
+ 
 The Lemon Man 	(C) 2010
 #hackerchannel 	(c) 2010

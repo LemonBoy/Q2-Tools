@@ -1,4 +1,3 @@
-Q := @
 TOOL_PREFIX = arm-none-linux-gnueabi
 CC = $(TOOL_PREFIX)-gcc
 STRIP = $(TOOL_PREFIX)-strip
@@ -8,7 +7,7 @@ SRC = hello.c
 
 all:
 	@echo "[COMPILE]"
-	@$(CC) -Wall $(SRC) -o $(OUTPUT)
+	@$(CC) -Wall $(SRC) -I../libq2 -L../libq2 -lQ2 -o $(OUTPUT)
 	@echo "[STRIP]"
 	@$(STRIP) -s $(OUTPUT)
 clean:

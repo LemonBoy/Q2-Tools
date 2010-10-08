@@ -186,12 +186,12 @@ inline void _my_itoa_us (unsigned int n, char *s)
 
 inline void _my_hex_itoa (unsigned int n, char *s, char fChr)
 {
-    int nibble;
+    int bNibble = 28;
 
-    for (nibble = 32/4; nibble >= 0; nibble--)
+    do
     {
-        *s++ = ((fChr == 'X') ? "0123456789ABCDEF" : "0123456789abcdef")[(n>>(nibble*4))&0xf];
-    }
+        *s++ = ((fChr == 'X') ? "0123456789ABCDEF" : "0123456789abcdef")[(n >> bNibble) & 0xF];
+    } while (bNibble -= 4);
 
     *s++ = 0;
 }
