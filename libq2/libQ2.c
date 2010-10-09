@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -62,7 +63,7 @@ unsigned char inputRead ()
 static int fbfd = 0;
 static unsigned short *fb = NULL;
 
-int fbInit ()
+int videoInit ()
 {
     fbfd = open("/dev/fb", O_RDWR);
     if (fbfd < 0)
@@ -73,23 +74,49 @@ int fbInit ()
     return 1;
 }
 
-void fbDraw ()
+int videoBrightnessSet (int level)
+{
+    char cmd[0x10] = {0, };
+    int lcdcr = open("/proc/lfbctrl", O_RDWR);
+    if (lcdcr < 0)
+        return 0;
+    if (level < 0)
+        level = 0;
+    if (level > 10)
+        level = 10;
+    sprintf(cmd, "backlight %d", level);
+    write(lcdcr, cmd, strlen(cmd));
+    close(lcdcr);
+    return 1;
+}
+
+int videoPowerSet (lcdPwr state)
+{
+    char cmd[0x10] = {0, };
+    int lcdcr = open("/proc/lfbctrl", O_RDWR);
+    sprintf(cmd, "lcdif %s", (state) ? "on" : "off");
+    write(lcdcr, cmd, strlen(cmd));
+    close(lcdcr);
+    return 1;
+}
+
+void videoDraw ()
 {
     const unsigned int screen_region[4] = {0, 0, 320, 240};
     ioctl(fbfd, 0x4010C10A, screen_region);
 }
 
-void fbPut (unsigned int x, unsigned int y, unsigned int pixel)
+void videoPlot (unsigned int x, unsigned int y, unsigned int pixel)
 {
     fb[y*240+x] = (pixel&0xFFFF);
 }
 
-void fbClear ()
+void videoClear ()
 {
     memset(fb, 0, 320*240*2);
 }
 
-unsigned short *fbPtr ()
+unsigned short *videoPtr ()
 {
     if (ttyfd < 0)
         return NULL;
@@ -136,30 +163,19 @@ unsigned int ledLevelGet ()
     unsigned int level = 0;
 
     if (ledfd)
-        ioctl(ledfd, 3, level);
+        ioctl(ledfd, 3, &level);
 
     return level;
 }
 
-/* Battery state reading */
-
-int battRead (battState *info)
-{
-    int battfd;
-    battfd = open("/dev/battery", O_RDWR);
-    if (battfd < 0)
-        return 0;
-    if (read(battfd, info, 6) != 6)
-        return 0;
-    close(battfd);
-    return 1;
-}
-
 /* Power management */
 
-int pwSetProfile (pmProfile profile)
+int pwSetProfile (pmProfile selected)
 {
     int powermanfd;
+    int profile = selected;
+    if (selected > PWR_MAX_PERF)
+        return 0;
     powermanfd = open("/dev/misc/pm", O_RDWR);
     if (powermanfd < 0)
         return 0;

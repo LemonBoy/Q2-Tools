@@ -12,7 +12,7 @@ unsigned char system_frameskip_key = 3;
 void system_VBL(void)
 {
     unsigned char keys;
-    unsigned short *fb = fbPtr();
+    unsigned short *fb = videoPtr();
     int x, y;
 
     for (x = 0; x < SCREEN_WIDTH; x++)
@@ -36,7 +36,7 @@ void system_VBL(void)
     ram[0x6F82] = up | (down << 1) | (left << 2) | (right << 3) |
         (button_a << 4) | (button_b << 5) | (option << 6);
 
-    fbDraw();
+    videoDraw();
 }
 
 void
@@ -131,14 +131,14 @@ void loadRom (char *path)
     rom_loaded();
 }
 
-static int emulatorState = 0;
-
 int main ()
 {
-    uFbInit(240, 320, fbInit, fbPut, fbDraw);
-    fbClear();
+    uFbInit(240, 320, videoInit, videoPlot, videoDraw);
+    videoClear();
     inputInit();
     ledInit();
+    videoBrightnessSet(LCD_BRIGHTNESS_MAX);
+    pwSetProfile(PWR_MAX_CPU);
 
     bios_install();
     reset();
@@ -149,19 +149,16 @@ int main ()
     loadRom("/mnt/usb/test.ngp");
     reset();
 
+    int appState = 0;
+
     while (1) {
-        //~ if (emulatorState)
-        //~ {
+        if (!appState) {
             emulate();
-            //~ uFbPrint("\x1b[0;60HPlaying : %s\n", rom_header->name);
-        //~ } else {
-            //~ uFbPrint("\x1b[0;0H%s-Q2\nPorted by The Lemon Man\nPress MENU to pause/start\n");
-        //~ }
-        //~ if (KEY_PRESSED(inputRead(), KEY_MENU))
-        //~ {
-            //~ emulatorState ^= 1;
-        //~ }
-        //~ uFbDrawEnd();
+        } else {
+            uFbPrint("\x1b[0;50H%s %s\nGoing pocket!\nPort by : The Lemon Man\n", PROGRAM_NAME, NEOPOP_VERSION);
+        }
+        if (KEY_PRESSED(inputRead(), KEY_MENU))
+            appState ^= 1;
     }
     return 1;
 }

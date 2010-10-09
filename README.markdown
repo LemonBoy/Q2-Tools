@@ -21,14 +21,14 @@ all you need to start enjoying homebrews on your Q2 :D
 Youre not an unix guru and you dont know what to write into the myscript.sh ?
 Don't worry, just copy this :
 
-#!/bin/sh
+[#!/bin/sh
 sleep 10
 if [ -f /mnt/usb/runcode ]; then
     rm -f /mnt/usb/runcode
     killall -9 AppMain
     sleep 6
     /mnt/usb/hello
-fi
+fi]
 
 It basically waits 10 seconds, then if a file called runcode exists into the
 root it will kill the main player app and start your app called 'hello' (yep,
@@ -49,7 +49,7 @@ stuff working.
 - Video trough framebuffer
 - Input (need multiple keys catching support)
 - Keypad leds control
-- Battery status reading
+- Brightness adjusting
 - CPU clock setting
 
 ### ...and what doesnt ###

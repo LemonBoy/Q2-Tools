@@ -1,23 +1,31 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/dir.h>
+#include <unistd.h>
 #include <libQ2.h>
 #include "uFb.h"
 
 int main ()
 {
-    battState state;
-    uFbInit(240, 320, fbInit, fbPut, fbDraw);
-    fbClear();
-    uFbPrint("input %i\n", inputInit());
-    uFbPrint("led   %i\n", ledInit());
+    uFbInit(240, 320, videoInit, videoPlot, videoDraw);
+    videoClear();
+    inputInit();
+    ledInit();
     ledPower(1);
-    ledLevelSet(4);
-    /* Bwah, not working -.- fails with errno = 6 */s
-    uFbPrint("bread %i errno %i\n", battRead(&state), errno);
-    uFbPrint("powah %i errno %i\n", pwSetProfile(PWR_OFF), errno);
-    uFbPrint("test  %i errno %i\n", open("/dev/misc/pm", 2), errno);
+    ledLevelSet(1);
+    pwSetProfile(PWR_MAX_CPU);
+    videoBrightnessSet(10);
+
     while (1) {
+        if (KEY_PRESSED(inputRead(), KEY_UP))
+            videoPowerSet(0);
+        if (KEY_PRESSED(inputRead(), KEY_DOWN))
+            videoPowerSet(1);
+        if (KEY_PRESSED(inputRead(), KEY_POWER))
+            pwSetProfile(PWR_OFF);
         uFbDrawEnd();
     }
+
+    return 1;
 }

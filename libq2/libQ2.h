@@ -3,13 +3,23 @@
 
 #define LIBQ2_VERSION "0.01"
 
-/* -- Framebuffer */
+/* -- Video */
 
-int fbInit ();
-void fbPut (unsigned int x, unsigned int y, unsigned int pixel);
-void fbDraw ();
-void fbClear ();
-unsigned short *fbPtr ();
+typedef enum {
+    PWR_LCD_OFF = 0,
+    PWR_LCD_ON
+} lcdPwr;
+
+#define LCD_BRIGHTNESS_NONE 0
+#define LCD_BRIGHTNESS_MAX  10
+
+int videoInit ();
+int videoBrightnessSet (int);
+int videoPowerSet (lcdPwr);
+void videoPlot (unsigned int, unsigned int, unsigned int);
+void videoDraw ();
+void videoClear ();
+unsigned short *videoPtr ();
 
 /* -- Input */
 
@@ -35,24 +45,14 @@ unsigned char inputRead ();
 /* -- Led */
 
 int ledInit ();
-void ledPower (int state);
+void ledPower (int);
 unsigned int ledLevelGet ();
-void ledLevelSet (unsigned int level);
-
-/* -- Battery info reading */
-
-typedef struct {
-    unsigned short level;
-    unsigned short type;
-    unsigned short status;
-} __attribute__((packed)) battState;
-
-int battRead (battState *state);
+void ledLevelSet (unsigned int);
 
 /* -- Power management */
 
 typedef enum {
-    PWR_OFF = 1,
+    PWR_OFF = 0,
     PWR_ON,
     PWR_IDLE,
     PWR_MP3,
@@ -72,6 +72,6 @@ typedef enum {
     PWR_MAX_PERF,
 } pmProfile;
 
-int pwSetProfile (pmProfile profile);
+int pwSetProfile (pmProfile);
 
 #endif
