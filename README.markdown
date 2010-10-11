@@ -63,9 +63,9 @@ stuff working.
 
 ### Creditz ###
 
-Matt_P for suggesting me the idea that the update was xor cyphered
-Booto for being the unix guru
-HACKERCHANNEL for being the greatest dudes on teh world
+Matt_P for suggesting me the idea that the update was xor cyphered,
+Booto for being the unix guru,
+HACKERCHANNEL for being the greatest dudes on teh world,
 Mum and Dad for buying me this wonderful PMP as b-day surprise :)
 
 

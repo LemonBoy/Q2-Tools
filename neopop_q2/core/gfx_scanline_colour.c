@@ -67,6 +67,8 @@ and compatiblity reasons.
 #include "mem.h"
 #include "gfx.h"
 
+_u16 BGR2RGB (_u16 color);
+
 //=============================================================================
 
 static void Plot(_u8 x, _u16* palette_ptr, _u8 palette, _u8 index, _u8 depth)
@@ -82,13 +84,7 @@ static void Plot(_u8 x, _u16* palette_ptr, _u8 palette, _u8 index, _u8 depth)
     zbuffer[x] = depth;
 
     //Get the colour of the pixel
-    data16 = palette_ptr[(palette << 2) + index];
-
-    int b = ((data16 & 15)<<1);
-    int g = ((data16 >> 4) & 15)<<1;
-    int r = ((data16 >> 4) & 15)<<1;
-
-    data16 = (r << 10) | (g << 5) | b;
+    data16 = BGR2RGB(palette_ptr[(palette << 2) + index]);
 
     if (negative)
         cfb_scanline[x] = ~data16;

@@ -7,21 +7,16 @@
 // ---
 
 unsigned char system_frameskip_key = 3;
+unsigned char frameskip_count = 0;
+
+void drawScreen (unsigned short *dst, unsigned short *src); /* asm.S */
 
 // ---
 void system_VBL(void)
 {
     unsigned char keys;
-    unsigned short *fb = videoPtr();
-    int x, y;
 
-    for (x = 0; x < SCREEN_WIDTH; x++)
-    {
-        for (y = 0; y < SCREEN_HEIGHT; y++)
-        {
-            fb[y*240+x] = cfb[y*SCREEN_WIDTH+x];
-        }
-    }
+    drawScreen(videoPtr(), cfb);
 
     keys = inputRead();
 
@@ -29,9 +24,9 @@ void system_VBL(void)
     unsigned char down = KEY_PRESSED(keys, KEY_DOWN) ? 1 : 0;
     unsigned char left = KEY_PRESSED(keys, KEY_LEFT) ? 1 : 0;
     unsigned char right = KEY_PRESSED(keys, KEY_RIGHT) ? 1 : 0;
-    unsigned char button_a = KEY_PRESSED(keys, KEY_OK) ? 1 : 0;
-    unsigned char button_b = KEY_PRESSED(keys, KEY_RETURN) ? 1 : 0;
-    unsigned char option = KEY_PRESSED(keys, KEY_USER) ? 1 : 0;
+    unsigned char button_a = KEY_PRESSED(keys, KEY_POWER) ? 1 : 0;
+    unsigned char button_b = KEY_PRESSED(keys, KEY_USER) ? 1 : 0;
+    unsigned char option = KEY_PRESSED(keys, KEY_MENU) ? 1 : 0;
 
     ram[0x6F82] = up | (down << 1) | (left << 2) | (right << 3) |
         (button_a << 4) | (button_b << 5) | (option << 6);
@@ -149,16 +144,8 @@ int main ()
     loadRom("/mnt/usb/test.ngp");
     reset();
 
-    int appState = 0;
-
     while (1) {
-        if (!appState) {
-            emulate();
-        } else {
-            uFbPrint("\x1b[0;50H%s %s\nGoing pocket!\nPort by : The Lemon Man\n", PROGRAM_NAME, NEOPOP_VERSION);
-        }
-        if (KEY_PRESSED(inputRead(), KEY_MENU))
-            appState ^= 1;
+        emulate();
     }
     return 1;
 }

@@ -24,11 +24,11 @@ NEOPOP_SRC = $(Z80)/Z80.c $(Z80)/dasm.c $(CORE)/Z80_interface.c \
           $(CORE)/interrupt.c $(CORE)/gfx.c $(CORE)/sound.c \
           $(CORE)/gfx_scanline_colour.c $(CORE)/gfx_scanline_mono.c \
           $(CORE)/flash.c $(CORE)/rom.c $(CORE)/state.c $(CORE)/neopop.c
-SRC = plat.c $(NEOPOP_SRC)
+SRC = asm.S plat.c $(NEOPOP_SRC)
 
 all:
 	@echo "[COMPILE]"
-	@$(CC) -Wall $(SRC) -I ../libq2 -I $(CORE) -I $(TLCS900) -I $(Z80) -I../libq2 -L../libq2 -lQ2 -o $(OUTPUT)
+	@$(CC) -Wall -O3 $(SRC) -I ../libq2 -I $(CORE) -I $(TLCS900) -I $(Z80) -I../libq2 -L../libq2 -lQ2 -o $(OUTPUT)
 	@echo "[STRIP]"
 	@$(STRIP) -s $(OUTPUT)
 clean:

@@ -86,14 +86,14 @@ static void Plot(_u8 x, _u8* palette_ptr, _u16 pal_hi, _u8 index, _u8 depth)
     else
         data8 = palette_ptr[0 + index];
 
-    r = (data8 & 7) << 2;
-    g = (data8 & 7) << 7;
-    b = (data8 & 7) << 12;
+    r = (data8 & 7) << 1;
+    g = (data8 & 7) << 5;
+    b = (data8 & 7) << 9;
 
     if (negative)
-        cfb_scanline[x] = (r | g | b);
+        cfb_scanline[x] = BGR2RGB(r | g | b);
     else
-        cfb_scanline[x] = ~(r | g | b);
+        cfb_scanline[x] = BGR2RGB(~(r | g | b));
 }
 
 static void drawPattern(_u8 screenx, _u16 tile, _u8 tiley, _u16 mirror,
