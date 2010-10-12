@@ -1,7 +1,8 @@
 from uci import *
 
-myTheme = uciTheme(open('Q2UCI_Night.UCI', 'rb'))
-"""s = open('45.bmp', 'rb').read()
-print 'CHECK IT %x' % len(s)
-myTheme.updateIconData(47, s)"""
-myTheme.save('out.uci')
+myTheme = uciTheme()
+myTheme.load('Q2UCI_Night.UCI')
+print '%s' % myTheme
+for img in myTheme.images:
+    open('l.bmp', 'w+b').write(img.getData())
+myTheme.save('ohai.uci')
